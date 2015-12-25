@@ -17,6 +17,7 @@ main = do
 data Options = Options { optShowVersion :: Bool
                        , optCommands    :: [String]
                        , optPatterns    :: [String]
+                       , optAntiPatterns :: [String]
                        , optDirectory   :: FilePath
                        } deriving (Show, Eq)
 
@@ -24,6 +25,7 @@ defaultOptions :: Options
 defaultOptions = Options { optShowVersion = False
                          , optCommands    = []
                          , optPatterns    = []
+                         , optAntiPatterns = []
                          , optDirectory   = "."
                          }
 
@@ -37,16 +39,19 @@ options = [ Option "v" ["version"]
           , Option "p" ["pattern"]
               (ReqArg (\e opts -> opts { optPatterns = optPatterns opts ++ [e] }) "pattern")
               "Add pattern to match on file path."
+          , Option "n" ["anti-pattern"]
+              (ReqArg (\e opts -> opts { optAntiPatterns = optAntiPatterns opts ++ [e] }) "anti-pattern")
+              "Add anti pattern to not match on file path."
           , Option "d" ["directory"]
               (ReqArg (\d opts -> opts { optDirectory = d }) "directory")
               "Set directory to watch for changes (default is ./)."
           ]
 
 header :: String
-header = "Usage: sos [vb] -c command -p pattern"
+header = "Usage: sos [vb] -c command -p pattern -n anti-pattern"
 
 version :: String
-version = "\nSteel Overseer 1.1.0.4\n"
+version = "\nSteel Overseer 1.1.0.5\n"
 
 startWithOpts :: Options -> IO ()
 startWithOpts opts = do
@@ -55,5 +60,5 @@ startWithOpts opts = do
         patternsValid = and $ fmap (not . null) optPatterns
     when optShowVersion $ putStrLn version
     unless patternsValid $ error "One or more patterns are empty."
-    let runSteelOverseer = steelOverseer optDirectory optCommands optPatterns
+    let runSteelOverseer = steelOverseer optDirectory optCommands optPatterns optAntiPatterns
     when (haveOptions && patternsValid) runSteelOverseer

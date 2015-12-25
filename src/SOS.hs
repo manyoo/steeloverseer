@@ -21,13 +21,13 @@ data SOSState = SOSIdle
                            }
 
 -- | Starts sos in a `dir` watching `ptns` to execute `cmds`.
-steelOverseer :: FilePath -> [String] -> [String] -> IO ()
-steelOverseer dir cmds ptns = do
+steelOverseer :: FilePath -> [String] -> [String] -> [String] -> IO ()
+steelOverseer dir cmds ptns antiPtns = do
     putStrLn "Hit enter to quit.\n"
     wm <- startManager
     mvar <- newEmptyMVar
 
-    let predicate = actionPredicateForRegexes ptns
+    let predicate = actionPredicateForRegexes ptns antiPtns
         action    = performCommand mvar cmds
     _ <- watchTree wm dir predicate action
     _ <- getLine
@@ -43,9 +43,9 @@ cleanup wm mvar = do
         _ -> return ()
     stopManager wm
 
-actionPredicateForRegexes :: [String] -> Event -> Bool
-actionPredicateForRegexes ptns event =
-    or (fmap (eventPath event =~) ptns :: [Bool])
+actionPredicateForRegexes :: [String] -> [String] -> Event -> Bool
+actionPredicateForRegexes ptns antiPtns event = or (matchPath ptns) && not (or (matchPath antiPtns))
+  where matchPath = fmap (eventPath event =~)
 
 performCommand :: MVar SOSState -> [String] -> Event -> IO ()
 performCommand mvar cmds event = do
