@@ -8,6 +8,7 @@ import  System.Console.ANSI
 import  Control.Monad
 import  Control.Concurrent
 import  Data.Maybe
+import  Data.Time.Clock
 import  Text.Regex.TDFA
 import  Prelude hiding   ( FilePath )
 
@@ -29,6 +30,11 @@ steelOverseer dir cmds ptns antiPtns = do
 
     let predicate = actionPredicateForRegexes ptns antiPtns
         action    = performCommand mvar cmds
+
+    -- build a fake Event and run the 'action' immidiately after startup
+    t <- getCurrentTime
+    action $ Modified "" t
+
     _ <- watchTree wm dir predicate action
     _ <- getLine
     cleanup wm mvar
